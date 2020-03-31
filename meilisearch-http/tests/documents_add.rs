@@ -162,7 +162,7 @@ fn check_add_documents_with_nested_sequence() {
 
 // Test issue https://github.com/meilisearch/MeiliSearch/issues/576
 #[test]
-fn check_add_documents_with_nested_truple() {
+fn check_add_documents_with_nested_tuple() {
     let mut server = common::Server::with_uid("tasks");
 
     // 1 - Create the index with no primary_key
@@ -182,7 +182,7 @@ fn check_add_documents_with_nested_truple() {
                 "id": 255,
                 "baz": "leesz",
                 "fuzz": {
-                    "fax": [234]
+                    "fax": [234],
                     "laser": [(25,0,100,-100)]
                 },
                 "sas": [()]

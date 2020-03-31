@@ -9,7 +9,7 @@ impl ser::Serializer for ConvertToString {
     type Ok = String;
     type Error = SerializerError;
     type SerializeSeq = SeqConvertToString;
-    type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
+    type SerializeTuple = TupleConvertToString;
     type SerializeTupleStruct = ser::Impossible<Self::Ok, Self::Error>;
     type SerializeTupleVariant = ser::Impossible<Self::Ok, Self::Error>;
     type SerializeMap = MapConvertToString;
@@ -260,6 +260,29 @@ pub struct SeqConvertToString {
 }
 
 impl ser::SerializeSeq for SeqConvertToString {
+    type Ok = String;
+    type Error = SerializerError;
+
+    fn serialize_element<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
+    where
+        T: ser::Serialize,
+    {
+        let text = key.serialize(ConvertToString)?;
+        self.text.push_str(&text);
+        self.text.push_str(" ");
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(self.text)
+    }
+}
+
+pub struct TupleConvertToString {
+    text: String,
+}
+
+impl ser::SerializeTuple for TupleConvertToString {
     type Ok = String;
     type Error = SerializerError;
 

@@ -159,3 +159,52 @@ fn check_add_documents_with_nested_sequence() {
     assert_eq!(status_code, 200);
     assert_eq!(response["hits"], body);
 }
+
+// Test issue https://github.com/meilisearch/MeiliSearch/issues/576
+#[test]
+fn check_add_documents_with_nested_tuple() {
+    let mut server = common::Server::with_uid("tasks");
+
+    // 1 - Create the index with no primary_key
+
+    let body = json!({ "uid": "tasks" });
+    let (response, status_code) = server.create_index(body);
+    assert_eq!(status_code, 201);
+    assert_eq!(response["primaryKey"], json!(null));
+
+    // 2 - Add a document that contains a seq in a nested object
+
+    let body = json!([{ 
+        "id": 1, 
+        "yield": { 
+            "bar": [(123,456)],
+            "fez": [{
+                "id": 255,
+                "baz": "leesz",
+                "fuzz": {
+                    "fax": [234],
+                    "laser": [(25,0,100,-100)]
+                },
+                "sas": [()]
+            }]
+        }
+    }]);
+
+    let url = "/indexes/tasks/documents";
+    let (response, status_code) = server.post_request(&url, body.clone());
+    eprintln!("{:#?}", response);
+    assert_eq!(status_code, 202);
+    let update_id = response["updateId"].as_u64().unwrap();
+    server.wait_update_id(update_id);
+
+    // 3 - Check update success
+
+    let (response, status_code) = server.get_update_status(update_id);
+    assert_eq!(status_code, 200);
+    assert_eq!(response["status"], "processed");
+
+    let url = "/indexes/tasks/search?q=-100";
+    let (response, status_code) = server.get_request(&url);
+    assert_eq!(status_code, 200);
+    assert_eq!(response["hits"], body);
+}

@@ -23,7 +23,7 @@ struct SearchQuery {
     attributes_to_crop: Option<String>,
     crop_length: Option<usize>,
     attributes_to_highlight: Option<String>,
-    filters: Option<String>,
+    filters: Option<HashSet<String>>,
     timeout_ms: Option<u64>,
     matches: Option<bool>,
 }
@@ -128,7 +128,7 @@ struct SearchMultiBody {
     searchable_attributes: Option<HashSet<String>>,
     attributes_to_crop: Option<HashMap<String, usize>>,
     attributes_to_highlight: Option<HashSet<String>>,
-    filters: Option<String>,
+    filters: Option<HashSet<String>>,
     timeout_ms: Option<u64>,
     matches: Option<bool>,
 }

@@ -101,7 +101,7 @@ pub struct SearchBuilder<'a> {
     attributes_to_crop: Option<HashMap<String, usize>>,
     attributes_to_retrieve: Option<HashSet<String>>,
     attributes_to_highlight: Option<HashSet<String>>,
-    filters: Option<String>,
+    filters: Option<HashSet<String>>,
     timeout: Duration,
     matches: bool,
 }
@@ -138,8 +138,8 @@ impl<'a> SearchBuilder<'a> {
         self
     }
 
-    pub fn filters(&mut self, value: String) -> &SearchBuilder {
-        self.filters = Some(value);
+    pub fn filters(&mut self, values: HashSet<String>) -> &SearchBuilder {
+        self.filters = Some(values);
         self
     }
 
@@ -172,7 +172,9 @@ impl<'a> SearchBuilder<'a> {
         };
 
         if let Some(filters) = &self.filters {
+
             let mut split = filters.split(':');
+
             match (split.next(), split.next()) {
                 (Some(_), None) | (Some(_), Some("")) => return Err(Error::MissingFilterValue),
                 (Some(attr), Some(value)) => {
@@ -492,6 +494,43 @@ fn calculate_matches(
 }
 
 fn calculate_highlights(
+    document: &IndexMap<String, Value>,
+    matches: &MatchesInfos,
+    attributes_to_highlight: &HashSet<String>,
+) -> IndexMap<String, Value> {
+    let mut highlight_result = document.clone();
+
+    for (attribute, matches) in matches.iter() {
+        if attributes_to_highlight.contains(attribute) {
+            if let Some(Value::String(value)) = document.get(attribute) {
+                let value: Vec<_> = value.chars().collect();
+                let mut highlighted_value = String::new();
+                let mut index = 0;
+                for m in matches {
+                    if m.start >= index {
+                        let before = value.get(index..m.start);
+                        let highlighted = value.get(m.start..(m.start + m.length));
+                        if let (Some(before), Some(highlighted)) = (before, highlighted) {
+                            highlighted_value.extend(before);
+                            highlighted_value.push_str("<em>");
+                            highlighted_value.extend(highlighted);
+                            highlighted_value.push_str("</em>");
+                            index = m.start + m.length;
+                        } else {
+                            error!("value: {:?}; index: {:?}, match: {:?}", value, index, m);
+                        }
+                    }
+                }
+                highlighted_value.extend(value[index..].iter());
+                highlight_result.insert(attribute.to_string(), Value::String(highlighted_value));
+            };
+        }
+    }
+
+    highlight_result
+}
+
+fn calculate_filters(
     document: &IndexMap<String, Value>,
     matches: &MatchesInfos,
     attributes_to_highlight: &HashSet<String>,

@@ -2,6 +2,7 @@ use std::ops::Range;
 use std::time::Duration;
 
 use crate::database::MainT;
+use std::collections::HashSet;
 use crate::bucket_sort::{bucket_sort, bucket_sort_with_distinct};
 use crate::{criterion::Criteria, Document, DocumentId};
 use crate::{reordered_attrs::ReorderedAttrs, store, MResult};
@@ -9,7 +10,7 @@ use crate::{reordered_attrs::ReorderedAttrs, store, MResult};
 pub struct QueryBuilder<'c, 'f, 'd> {
     criteria: Criteria<'c>,
     searchable_attrs: Option<ReorderedAttrs>,
-    filter: Option<Box<dyn Fn(DocumentId) -> bool + 'f>>,
+    filters: Option<Box<Vec<dyn Fn(DocumentId) -> bool + 'f>>>,
     distinct: Option<(Box<dyn Fn(DocumentId) -> Option<u64> + 'd>, usize)>,
     timeout: Option<Duration>,
     main_store: store::Main,
@@ -52,7 +53,7 @@ impl<'c, 'f, 'd> QueryBuilder<'c, 'f, 'd> {
         QueryBuilder {
             criteria,
             searchable_attrs: None,
-            filter: None,
+            filters: None,
             distinct: None,
             timeout: None,
             main_store: main,
@@ -64,11 +65,11 @@ impl<'c, 'f, 'd> QueryBuilder<'c, 'f, 'd> {
         }
     }
 
-    pub fn with_filter<F>(&mut self, function: F)
+    pub fn with_filter<F>(&mut self, function: HashSet<F>)
     where
         F: Fn(DocumentId) -> bool + 'f,
     {
-        self.filter = Some(Box::new(function))
+        self.filters = Some(Box::new(function))
     }
 
     pub fn with_fetch_timeout(&mut self, timeout: Duration) {
@@ -98,7 +99,7 @@ impl<'c, 'f, 'd> QueryBuilder<'c, 'f, 'd> {
                 reader,
                 query,
                 range,
-                self.filter,
+                self.filters,
                 distinct,
                 distinct_size,
                 self.criteria,
@@ -114,7 +115,7 @@ impl<'c, 'f, 'd> QueryBuilder<'c, 'f, 'd> {
                 reader,
                 query,
                 range,
-                self.filter,
+                self.filters,
                 self.criteria,
                 self.searchable_attrs,
                 self.main_store,

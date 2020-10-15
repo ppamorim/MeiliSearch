@@ -5,17 +5,18 @@ use actix_web::{get, post};
 use actix_web::{HttpResponse, web};
 use serde::{Deserialize, Serialize};
 
-use crate::dump::{DumpInfo, DumpStatus, compressed_dumps_folder, init_dump_process};
+use crate::dump::{DumpInfo, DumpStatus, list_dumps_folder, compressed_dumps_folder, init_dump_process};
 use crate::Data;
 use crate::error::{Error, ResponseError};
 use crate::helpers::Authentication;
 
 pub fn services(cfg: &mut web::ServiceConfig) {
     cfg.service(trigger_dump)
+        .service(list_dumps)
         .service(get_dump_status);
 }
 
-#[post("/dumps", wrap = "Authentication::Private")]
+#[post("/dumps/create", wrap = "Authentication::Private")]
 async fn trigger_dump(
     data: web::Data<Data>,
 ) -> Result<HttpResponse, ResponseError> {
@@ -25,6 +26,18 @@ async fn trigger_dump(
         Err(e) => Err(e.into())
     }
 }
+
+#[get("/dumps", wrap = "Authentication::Private")]
+async fn list_dumps(
+    data: web::Data<Data>,
+) -> Result<HttpResponse, ResponseError> {
+    let dumps_folder = Path::new(&data.dumps_folder);
+    match list_dumps_folder(dumps_folder) {
+        Ok(dumps_info) => Ok(HttpResponse::Ok().json(dumps_info)),
+        Err(e) => Err(Error::not_found("dump does not exist").into())
+    }
+}
+
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

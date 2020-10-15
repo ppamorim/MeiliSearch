@@ -490,7 +490,7 @@ impl Server {
     }
 
     pub async fn trigger_dump(&self) -> (Value, StatusCode) {
-        self.post_request("/dumps", Value::Null).await
+        self.post_request("/dumps/create", Value::Null).await
     }
 
     pub async fn get_dump_status(&mut self, dump_uid: &str) -> (Value, StatusCode) {

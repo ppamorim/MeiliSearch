@@ -1,4 +1,4 @@
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, read_dir, File};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -240,6 +240,37 @@ impl DumpInfo {
 /// Generate uid from creation date
 fn generate_uid() -> String {
     Utc::now().format("%Y%m%d-%H%M%S%3f").to_string()
+}
+
+pub fn list_dumps_folder(dumps_folder: &Path) -> Result<Vec<DumpInfo>, Error> {
+    match read_dir(dumps_folder) {
+        Ok(paths) => {
+            let resume = DumpInfo::get_current();
+            let mut dumpsInfo: Vec<DumpInfo> = paths
+                .filter(|path| path.is_ok())
+                .map(|path| path.unwrap().path())
+                .filter(|path| !path.is_dir())
+                .filter(|path| path.extension().unwrap() == "gz")
+                .flat_map(|path| {
+                    let lossy = path.file_stem()?.to_string_lossy();
+                    let dump_uid = lossy.strip_suffix(".tar")?;
+                    Some(String::from(dump_uid))
+                })
+                .filter(|dump_uid| {
+                    if let Some(resume) = &resume {
+                        return &resume.uid == dump_uid
+                    }
+                    return true
+                })
+                .map(|dump_uid| DumpInfo::new(dump_uid, DumpStatus::Done))
+                .collect();
+            
+            dumpsInfo.extend(resume);
+
+            Ok(dumpsInfo)
+        },
+        Err(e) => Err(Error::dump_read_failed())
+    }
 }
 
 /// Infer dumps_folder from dump_uid

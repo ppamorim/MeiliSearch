@@ -78,6 +78,7 @@ pub enum Code {
     UnsupportedMediaType,
 
     DumpAlreadyInProgress,
+    DumpReadFailed,
     DumpProcessFailed,
 }
 
@@ -128,6 +129,7 @@ impl Code {
 
             // error related to dump
             DumpAlreadyInProgress => ErrCode::invalid("dump_already_in_progress", StatusCode::CONFLICT),
+            DumpReadFailed => ErrCode::internal("dump_read_failed", StatusCode::INTERNAL_SERVER_ERROR),
             DumpProcessFailed => ErrCode::internal("dump_process_failed", StatusCode::INTERNAL_SERVER_ERROR),
         }
     }

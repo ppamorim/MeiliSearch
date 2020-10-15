@@ -54,6 +54,7 @@ pub enum Error {
     PayloadTooLarge,
     UnsupportedMediaType,
     DumpAlreadyInProgress,
+    DumpReadFailed,
     DumpProcessFailed,
 }
 
@@ -81,6 +82,7 @@ impl ErrorCode for Error {
             PayloadTooLarge => Code::PayloadTooLarge,
             UnsupportedMediaType => Code::UnsupportedMediaType,
             DumpAlreadyInProgress => Code::DumpAlreadyInProgress,
+            DumpReadFailed => Code::DumpReadFailed,
             DumpProcessFailed => Code::DumpProcessFailed,
         }
     }
@@ -189,6 +191,10 @@ impl Error {
         Error::DumpAlreadyInProgress
     }
 
+    pub fn dump_read_failed() -> Error {
+        Error::DumpReadFailed
+    }
+
     pub fn dump_failed() -> Error {
         Error::DumpProcessFailed
     }
@@ -215,6 +221,7 @@ impl fmt::Display for Error {
             Self::PayloadTooLarge => f.write_str("Payload too large"),
             Self::UnsupportedMediaType => f.write_str("Unsupported media type"),
             Self::DumpAlreadyInProgress => f.write_str("Another dump is already in progress"),
+            Self::DumpReadFailed => f.write_str("Dump read failed"),
             Self::DumpProcessFailed => f.write_str("Dump process failed"),
         }
     }
